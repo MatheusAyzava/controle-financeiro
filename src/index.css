@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-xl shadow-lg p-6 border border-slate-200 transition-all duration-300 hover:shadow-xl;
+  }
+  
+  .card-gradient {
+    @apply rounded-2xl shadow-2xl p-6 text-white relative overflow-hidden transition-all duration-300 hover:scale-105;
+  }
+  
+  .card-gradient:hover {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+  
+  .card-gradient::before {
+    content: '';
+    @apply absolute top-0 right-0 w-32 h-32 rounded-full opacity-20 blur-2xl;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105;
+  }
+  
+  .btn-secondary {
+    @apply bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 px-4 rounded-lg transition-all duration-200 hover:scale-105;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all;
+  }
+  
+  .progress-bar {
+    @apply w-full bg-slate-200 rounded-full h-6 overflow-hidden shadow-inner;
+  }
+  
+  .progress-fill {
+    @apply h-full rounded-full transition-all duration-1000 ease-out shadow-lg;
+  }
+}

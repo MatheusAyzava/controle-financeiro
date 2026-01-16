@@ -1,0 +1,69 @@
+═══════════════════════════════════════════════════════════════
+  📋 CONFIGURAÇÃO RÁPIDA DO BANCO DE DADOS - SUPABASE
+═══════════════════════════════════════════════════════════════
+
+PASSO 1: CRIAR PROJETO NO SUPABASE
+───────────────────────────────────────────────────────────────
+1. Acesse: https://app.supabase.com
+2. Clique em "New Project"
+3. Preencha:
+   - Name: controle-financeiro
+   - Database Password: [escolha uma senha forte]
+   - Region: South America (São Paulo)
+4. Clique em "Create new project"
+5. Aguarde 2-5 minutos
+
+
+PASSO 2: CRIAR TABELAS
+───────────────────────────────────────────────────────────────
+1. No Supabase, clique em "SQL Editor" (menu lateral)
+2. Clique em "New Query"
+3. Abra o arquivo: supabase-schema.sql
+4. Copie TODO o conteúdo
+5. Cole no SQL Editor do Supabase
+6. Clique em "Run" (botão verde)
+7. Deve aparecer: "Success. No rows returned"
+
+
+PASSO 3: OBTER CREDENCIAIS
+───────────────────────────────────────────────────────────────
+1. No Supabase, clique em "Settings" (menu lateral)
+2. Clique em "API"
+3. Copie:
+   - Project URL → será sua VITE_SUPABASE_URL
+   - anon public key → será sua VITE_SUPABASE_ANON_KEY
+
+
+PASSO 4: CONFIGURAR NO PROJETO
+───────────────────────────────────────────────────────────────
+1. Na raiz do projeto, crie arquivo: .env.local
+2. Cole no arquivo:
+
+VITE_SUPABASE_URL=https://seu-projeto.supabase.co
+VITE_SUPABASE_ANON_KEY=sua-chave-anon-aqui
+
+3. Substitua os valores pelas credenciais do Passo 3
+
+
+PASSO 5: TESTAR
+───────────────────────────────────────────────────────────────
+1. Pare o servidor (Ctrl+C)
+2. Execute: npm run dev
+3. Abra o navegador em: http://localhost:5174
+4. Abra o Console (F12)
+5. NÃO deve aparecer: "Variáveis do Supabase não configuradas"
+6. Adicione uma transação no app
+7. No Supabase → Table Editor → transacoes
+8. Você deve ver a transação lá! ✅
+
+
+═══════════════════════════════════════════════════════════════
+⚠️  IMPORTANTE:
+═══════════════════════════════════════════════════════════════
+
+- O arquivo .env.local deve estar na RAIZ do projeto
+- O arquivo .env.local começa com PONTO (.)
+- NÃO commite o .env.local no Git (já está no .gitignore)
+- Para mais detalhes, veja: CONFIGURAR_BANCO.md
+
+═══════════════════════════════════════════════════════════════
