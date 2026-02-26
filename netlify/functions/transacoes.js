@@ -43,6 +43,54 @@ exports.handler = async (event, context) => {
 
     // GET - Carregar transações
     if (event.httpMethod === 'GET') {
+      // Primeiro, verificar se a planilha existe e está acessível
+      try {
+        const spreadsheetInfo = await sheets.spreadsheets.get({
+          spreadsheetId: SPREADSHEET_ID,
+        });
+        
+        // Verificar se a aba existe
+        const sheetExists = spreadsheetInfo.data.sheets?.some(
+          sheet => sheet.properties.title === SHEET_TAB
+        );
+        
+        if (!sheetExists) {
+          const availableSheets = spreadsheetInfo.data.sheets?.map(s => s.properties.title).join(', ') || 'nenhuma';
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({ 
+              error: 'Aba não encontrada',
+              details: `A aba "${SHEET_TAB}" não existe na planilha. Abas disponíveis: ${availableSheets}`,
+              availableSheets: spreadsheetInfo.data.sheets?.map(s => s.properties.title) || []
+            }),
+          };
+        }
+      } catch (infoError) {
+        if (infoError.message?.includes('not found') || infoError.message?.includes('NOT_FOUND')) {
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({ 
+              error: 'Planilha não encontrada',
+              details: `A planilha com ID "${SPREADSHEET_ID}" não foi encontrada. Verifique se o ID está correto e se a planilha está compartilhada com a service account.`
+            }),
+          };
+        }
+        if (infoError.message?.includes('permission') || infoError.message?.includes('PERMISSION_DENIED')) {
+          return {
+            statusCode: 403,
+            headers,
+            body: JSON.stringify({ 
+              error: 'Sem permissão',
+              details: `A service account não tem permissão para acessar a planilha. Compartilhe a planilha com: ${process.env.GOOGLE_CLIENT_EMAIL}`
+            }),
+          };
+        }
+        // Se for outro erro, continuar e tentar ler mesmo assim
+        console.warn('Aviso ao verificar planilha:', infoError.message);
+      }
+      
       const range = `${SHEET_TAB}!A2:K`;
       
       const response = await sheets.spreadsheets.values.get({
@@ -218,11 +266,47 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({ error: 'Method not allowed' }),
     };
   } catch (error) {
-    console.error('Erro:', error);
+    console.error('Erro na função:', error);
+    console.error('Stack:', error.stack);
+    
+    // Retornar mensagem de erro mais detalhada
+    let errorMessage = 'Erro interno do servidor';
+    let errorDetails = error.message || 'Erro desconhecido';
+    
+    // Verificar se é erro de autenticação
+    if (error.message?.includes('credentials') || error.message?.includes('authentication')) {
+      errorMessage = 'Erro de autenticação com Google Sheets';
+      errorDetails = 'Verifique as credenciais da service account';
+    }
+    
+    // Verificar se é erro de permissão
+    if (error.message?.includes('permission') || error.message?.includes('PERMISSION_DENIED')) {
+      errorMessage = 'Erro de permissão';
+      errorDetails = 'A service account não tem permissão para acessar a planilha';
+    }
+    
+    // Verificar se é erro de planilha não encontrada
+    if (error.message?.includes('not found') || error.message?.includes('NOT_FOUND')) {
+      errorMessage = 'Planilha não encontrada';
+      errorDetails = 'Verifique se o GOOGLE_SHEET_ID está correto';
+    }
+    
+    // Verificar se é erro de operação não suportada (geralmente aba não existe)
+    if (error.message?.includes('not supported') || error.message?.includes('This operation is not supported')) {
+      errorMessage = 'Operação não suportada';
+      errorDetails = `A aba "${SHEET_TAB}" pode não existir ou a planilha não está acessível. Verifique se a aba existe e se a planilha está compartilhada com: ${process.env.GOOGLE_CLIENT_EMAIL}`;
+    }
+    
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Erro interno', details: error.message }),
+      body: JSON.stringify({ 
+        error: errorMessage, 
+        details: errorDetails,
+        message: error.message,
+        // Em desenvolvimento, incluir stack trace
+        ...(process.env.NETLIFY_DEV && { stack: error.stack })
+      }),
     };
   }
 };
