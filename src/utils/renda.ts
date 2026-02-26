@@ -1,16 +1,7 @@
-import { salvarRenda as salvarRendaSupabase, carregarRenda as carregarRendaSupabase } from './supabaseStorage';
-
 const RENDA_KEY = 'controle-financeiro-renda';
 
 export const salvarRenda = async (renda: number): Promise<void> => {
-  // Tentar salvar no Supabase primeiro
-  try {
-    await salvarRendaSupabase(renda);
-  } catch (error) {
-    console.error('Erro ao salvar renda no Supabase:', error);
-  }
-  
-  // Sempre salvar no localStorage como backup
+  // Salvar apenas no localStorage (não usa mais Supabase)
   try {
     localStorage.setItem(RENDA_KEY, JSON.stringify(renda));
   } catch (error) {
@@ -19,15 +10,7 @@ export const salvarRenda = async (renda: number): Promise<void> => {
 };
 
 export const carregarRenda = async (): Promise<number> => {
-  // Tentar carregar do Supabase primeiro
-  try {
-    const renda = await carregarRendaSupabase();
-    if (renda > 0) return renda;
-  } catch (error) {
-    console.error('Erro ao carregar renda do Supabase:', error);
-  }
-  
-  // Fallback para localStorage
+  // Carregar apenas do localStorage (não usa mais Supabase)
   try {
     const dados = localStorage.getItem(RENDA_KEY);
     if (dados) {
