@@ -9,10 +9,7 @@ const VisibilityContext = createContext<VisibilityContextType | undefined>(undef
 
 export function VisibilityProvider({ children }: { children: ReactNode }) {
   const [valoresVisiveis, setValoresVisiveis] = useState(false);
-
-  const toggleValores = () => {
-    setValoresVisiveis(prev => !prev);
-  };
+  const toggleValores = () => setValoresVisiveis(prev => !prev);
 
   return (
     <VisibilityContext.Provider value={{ valoresVisiveis, toggleValores }}>

@@ -1,7 +1,7 @@
 import { Transacao, Cartao } from '../types';
 import { formatarMoeda, formatarData } from '../utils/formatacao';
 import { useVisibility } from '../contexts/VisibilityContext';
-import { Trash2, User, Users, CreditCard } from 'lucide-react';
+import { Trash2, User, Users, CreditCard, Repeat } from 'lucide-react';
 
 const formatarNomeCartao = (cartao: Cartao): string => {
   const nomes: Record<Cartao, string> = {
@@ -12,8 +12,25 @@ const formatarNomeCartao = (cartao: Cartao): string => {
     'itau': 'Itaú',
     'atacadão': 'Atacadão',
     'carrefour': 'Carrefour',
+    'sem_cartao': 'Sem Cartão',
   };
   return nomes[cartao] || cartao;
+};
+
+const formatarTipoDespesa = (tipo: string): string => {
+  const tipos: Record<string, string> = {
+    'aluguel': '🏠 Aluguel',
+    'conta_luz': '💡 Conta de Luz',
+    'conta_agua': '💧 Conta de Água',
+    'internet': '📶 Internet/TV/Telefone',
+    'supermercado': '🛒 Supermercado',
+    'farmacia': '💊 Farmácia',
+    'combustivel': '⛽ Combustível',
+    'transferencia': '💸 Transferência/PIX',
+    'dinheiro': '💵 Dinheiro',
+    'outros': '📋 Outros',
+  };
+  return tipos[tipo] || tipo;
 };
 
 interface ListaTransacoesProps {
@@ -72,10 +89,24 @@ export default function ListaTransacoes({ transacoes, onRemover }: ListaTransaco
                   {transacao.pessoa === 'matheus' ? 'Matheus' : transacao.pessoa === 'alessandra' ? 'Alessandra' : (transacao.nomeOutros || 'Outros')}
                 </span>
               </div>
+              {transacao.recorrente && (
+                <div className="flex items-center gap-1 mt-2">
+                  <Repeat className="w-4 h-4 text-green-600" />
+                  <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded-full">
+                    Recorrente
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-3 mt-1 text-sm text-slate-600 flex-wrap">
                 <span className="flex items-center gap-1">
                   <CreditCard className="w-3 h-3" />
-                  {formatarNomeCartao(transacao.cartao)}
+                  {transacao.cartao === 'sem_cartao' && transacao.tipoDespesaSemCartao ? (
+                    <span>
+                      {formatarNomeCartao(transacao.cartao)} - {formatarTipoDespesa(transacao.tipoDespesaSemCartao)}
+                    </span>
+                  ) : (
+                    formatarNomeCartao(transacao.cartao)
+                  )}
                 </span>
                 <span>•</span>
                 <span>{transacao.categoria}</span>

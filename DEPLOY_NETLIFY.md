@@ -40,7 +40,7 @@ npm run build
    
    **Variável 2:**
    - Key: `VITE_SUPABASE_ANON_KEY`
-   - Value: `sb_publishable_GB_d0Ip8-wH9Ig5PX_-HMg_DBObDoBM`
+   - Value: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpuanNieWlzbnByaXl5eGRjcGduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1Nzc1NDAsImV4cCI6MjA4NDE1MzU0MH0.X8CsYLTQ58YA9274g8aoFC6tSqRuC6tvVMZS8C6hISw`
 
 5. Clique em **"Save"** (Salvar)
 
@@ -139,7 +139,7 @@ Se não detectar, preencha manualmente.
 2. Clique em **"New variable"**
 3. Adicione as duas variáveis:
    - `VITE_SUPABASE_URL` = `https://jnjsbyisnpriyyxdcpgn.supabase.co`
-   - `VITE_SUPABASE_ANON_KEY` = `sb_publishable_GB_d0Ip8-wH9Ig5PX_-HMg_DBObDoBM`
+   - `VITE_SUPABASE_ANON_KEY` = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpuanNieWlzbnByaXl5eGRjcGduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1Nzc1NDAsImV4cCI6MjA4NDE1MzU0MH0.X8CsYLTQ58YA9274g8aoFC6tSqRuC6tvVMZS8C6hISw`
 4. Clique em **"Deploy site"**
 
 #### Vantagem desta opção:

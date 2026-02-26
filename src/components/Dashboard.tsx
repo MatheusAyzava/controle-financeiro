@@ -4,14 +4,18 @@ import { TrendingUp, User, Users, Receipt, AlertCircle, TrendingDown, Calendar, 
 import RendaMensal from './RendaMensal';
 import MaioresGastos from './MaioresGastos';
 import GastosPorCartao from './GastosPorCartao';
+import LembreteFaturas from './LembreteFaturas';
+import ContasRecorrentes from './ContasRecorrentes';
+import { Transacao } from '../types';
 import { useVisibility } from '../contexts/VisibilityContext';
 
 interface DashboardProps {
   resumo: ResumoFinanceiro;
   onRendaChange: (renda?: number) => void;
+  transacoes?: Transacao[];
 }
 
-export default function Dashboard({ resumo, onRendaChange }: DashboardProps) {
+export default function Dashboard({ resumo, onRendaChange, transacoes = [] }: DashboardProps) {
   const { valoresVisiveis, toggleValores } = useVisibility();
   const porcentagemMatheus = resumo.totalGeral > 0 
     ? (resumo.totalMatheus / resumo.totalGeral) * 100 
@@ -269,6 +273,10 @@ export default function Dashboard({ resumo, onRendaChange }: DashboardProps) {
       {resumo.maioresGastos.length > 0 && (
         <MaioresGastos gastos={resumo.maioresGastos} />
       )}
+
+      <LembreteFaturas />
+
+      {transacoes.length > 0 && <ContasRecorrentes transacoes={transacoes} />}
 
       <GastosPorCartao gastosPorCartao={resumo.gastosPorCartao} />
     </div>

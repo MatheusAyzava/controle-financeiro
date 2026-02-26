@@ -1,39 +1,6 @@
 import { Transacao, ResumoFinanceiro, Cartao } from '../types';
 import { calcularParcelasFuturas, calcularTotalParcelasFuturas } from './parcelas';
 
-const STORAGE_KEY = 'controle-financeiro-transacoes';
-
-export const salvarTransacoes = (transacoes: Transacao[]): void => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(transacoes));
-  } catch (error) {
-    console.error('Erro ao salvar transações:', error);
-  }
-};
-
-export const carregarTransacoes = (): Transacao[] => {
-  try {
-    const dados = localStorage.getItem(STORAGE_KEY);
-    if (dados) {
-      const transacoes: any[] = JSON.parse(dados);
-      // Migração: converter "sogra" para "alessandra" e adicionar cartão se não existir
-      return transacoes.map((t) => ({
-        ...t,
-        pessoa: t.pessoa === 'sogra' ? 'alessandra' : (t.pessoa === 'eu' ? 'matheus' : t.pessoa),
-        cartao: t.cartao || 'nubank', // Default para nubank se não existir
-        parcelado: t.parcelado || false,
-        numeroParcelas: t.numeroParcelas || 1,
-        parcelaAtual: t.parcelaAtual || 1,
-        valorParcela: t.valorParcela || t.valor,
-        valorTotal: t.valorTotal || t.valor,
-      })) as Transacao[];
-    }
-  } catch (error) {
-    console.error('Erro ao carregar transações:', error);
-  }
-  return [];
-};
-
 export const calcularResumo = (transacoes: Transacao[], rendaMensal: number = 0): ResumoFinanceiro => {
   const totalMatheus = transacoes
     .filter(t => t.pessoa === 'matheus')
@@ -70,7 +37,7 @@ export const calcularResumo = (transacoes: Transacao[], rendaMensal: number = 0)
     }));
 
   // Calcular gastos por cartão
-  const cartoes: Cartao[] = ['nubank', 'banco do brasil', 'c6', 'ame', 'itau', 'atacadão', 'carrefour'];
+  const cartoes: Cartao[] = ['nubank', 'banco do brasil', 'c6', 'ame', 'itau', 'atacadão', 'carrefour', 'sem_cartao'];
   const gastosPorCartao: Record<Cartao, { matheus: number; alessandra: number; outros: number; total: number }> = {} as any;
   
   cartoes.forEach(cartao => {

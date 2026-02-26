@@ -1,6 +1,12 @@
 export type Pessoa = 'matheus' | 'alessandra' | 'outros';
 
-export type Cartao = 'nubank' | 'banco do brasil' | 'c6' | 'ame' | 'itau' | 'atacadão' | 'carrefour';
+export type Cartao = 'nubank' | 'banco do brasil' | 'c6' | 'ame' | 'itau' | 'atacadão' | 'carrefour' | 'sem_cartao';
+
+export interface ConfiguracaoCartao {
+  cartao: Cartao;
+  diaFechamento: number; // Dia do mês em que a fatura fecha (1-31)
+  diaVencimento: number; // Dia do mês em que a fatura vence (1-31)
+}
 
 export interface Transacao {
   id: string;
@@ -17,6 +23,8 @@ export interface Transacao {
   valorParcela?: number;
   valorTotal?: number;
   nomeOutros?: string; // Nome personalizado quando pessoa é 'outros'
+  recorrente?: boolean; // Se é uma conta recorrente (todo mês)
+  tipoDespesaSemCartao?: string; // Tipo de despesa quando não é cartão (aluguel, contas, etc)
 }
 
 export interface ResumoFinanceiro {

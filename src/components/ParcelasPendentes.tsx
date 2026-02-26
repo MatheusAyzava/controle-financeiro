@@ -17,6 +17,7 @@ const formatarNomeCartao = (cartao: Cartao | string): string => {
     'itau': 'Itaú',
     'atacadão': 'Atacadão',
     'carrefour': 'Carrefour',
+    'sem_cartao': 'Sem Cartão',
   };
   return nomes[cartao] || cartao;
 };

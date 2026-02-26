@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Transacao, Pessoa, Cartao } from '../types';
-import { Plus } from 'lucide-react';
+import { calcularMesFatura, carregarConfiguracoesCartoes, formatarMesFatura } from '../utils/fatura';
+import { Plus, Info } from 'lucide-react';
 
 interface FormularioTransacaoProps {
   onAdicionar: (transacao: Omit<Transacao, 'id' | 'createdAt'>) => void;
@@ -24,6 +25,7 @@ const cartoes: Cartao[] = [
   'itau',
   'atacadão',
   'carrefour',
+  'sem_cartao',
 ];
 
 const formatarNomeCartao = (cartao: Cartao): string => {
@@ -35,6 +37,7 @@ const formatarNomeCartao = (cartao: Cartao): string => {
     'itau': 'Itaú',
     'atacadão': 'Atacadão',
     'carrefour': 'Carrefour',
+    'sem_cartao': 'Sem Cartão (Dinheiro/PIX/Transferência)',
   };
   return nomes[cartao] || cartao;
 };
@@ -50,6 +53,15 @@ export default function FormularioTransacao({ onAdicionar }: FormularioTransacao
   const [numeroParcelas, setNumeroParcelas] = useState(1);
   const [parcelaAtual, setParcelaAtual] = useState(1);
   const [nomeOutros, setNomeOutros] = useState('');
+  const [recorrente, setRecorrente] = useState(false);
+  const [tipoDespesaSemCartao, setTipoDespesaSemCartao] = useState('');
+
+  // Calcular qual mês de fatura esta transação vai contar (apenas se for cartão)
+  const configs = carregarConfiguracoesCartoes();
+  const configCartao = configs.find(c => c.cartao === cartao);
+  const diaFechamento = configCartao?.diaFechamento || 10;
+  const mesFatura = cartao !== 'sem_cartao' ? calcularMesFatura(data, diaFechamento, cartao) : '';
+  const mesFaturaFormatado = mesFatura ? formatarMesFatura(mesFatura) : '';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +103,8 @@ export default function FormularioTransacao({ onAdicionar }: FormularioTransacao
       valorParcela: parcelado ? valorParcela : undefined,
       valorTotal: parcelado ? valorTotal : undefined,
       nomeOutros: pessoa === 'outros' ? nomeOutros.trim() : undefined,
+      recorrente: recorrente || undefined,
+      tipoDespesaSemCartao: cartao === 'sem_cartao' ? tipoDespesaSemCartao.trim() || undefined : undefined,
     });
 
     // Reset form
@@ -104,6 +118,8 @@ export default function FormularioTransacao({ onAdicionar }: FormularioTransacao
         setNumeroParcelas(1);
         setParcelaAtual(1);
         setNomeOutros('');
+        setRecorrente(false);
+        setTipoDespesaSemCartao('');
       };
 
   return (
@@ -213,6 +229,56 @@ export default function FormularioTransacao({ onAdicionar }: FormularioTransacao
               </option>
             ))}
           </select>
+          {configCartao && cartao !== 'sem_cartao' && (
+            <div className="mt-2 p-2 bg-blue-50 rounded-lg border border-blue-200 flex items-start gap-2">
+              <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs text-blue-800">
+                  <strong>Mês de fatura:</strong> Esta transação contará para <strong>{mesFaturaFormatado}</strong>
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  (Fatura fecha dia {diaFechamento.toString().padStart(2, '0')})
+                </p>
+              </div>
+            </div>
+          )}
+          {cartao === 'sem_cartao' && (
+            <>
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Tipo de Despesa
+                </label>
+                <select
+                  value={tipoDespesaSemCartao}
+                  onChange={(e) => setTipoDespesaSemCartao(e.target.value)}
+                  className="input-field"
+                >
+                  <option value="">Selecione o tipo...</option>
+                  <option value="aluguel">🏠 Aluguel</option>
+                  <option value="conta_luz">💡 Conta de Luz</option>
+                  <option value="conta_agua">💧 Conta de Água</option>
+                  <option value="internet">📶 Internet/TV/Telefone</option>
+                  <option value="supermercado">🛒 Supermercado (Dinheiro/PIX)</option>
+                  <option value="farmacia">💊 Farmácia (Dinheiro/PIX)</option>
+                  <option value="combustivel">⛽ Combustível (Dinheiro/PIX)</option>
+                  <option value="transferencia">💸 Transferência/PIX</option>
+                  <option value="dinheiro">💵 Pagamento em Dinheiro</option>
+                  <option value="outros">📋 Outros</option>
+                </select>
+              </div>
+              <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-200 flex items-start gap-2">
+                <Info className="w-4 h-4 text-slate-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-xs text-slate-700">
+                    <strong>Despesa sem cartão:</strong> Esta transação será contabilizada no mês da data informada.
+                  </p>
+                  <p className="text-xs text-slate-600 mt-1">
+                    Selecione o tipo de despesa acima para melhor organização.
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <div>
@@ -302,6 +368,24 @@ export default function FormularioTransacao({ onAdicionar }: FormularioTransacao
             </div>
           </div>
         )}
+
+        <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+          <input
+            type="checkbox"
+            id="recorrente"
+            checked={recorrente}
+            onChange={(e) => setRecorrente(e.target.checked)}
+            className="w-5 h-5 text-primary-600 rounded focus:ring-primary-500"
+          />
+          <label htmlFor="recorrente" className="text-sm font-medium text-slate-700 cursor-pointer flex-1 flex items-center gap-2">
+            <span>Conta recorrente (todo mês)</span>
+            {recorrente && (
+              <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                ✓ Recorrente
+              </span>
+            )}
+          </label>
+        </div>
 
         <button
           type="submit"
