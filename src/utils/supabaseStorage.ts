@@ -114,7 +114,7 @@ export const salvarTransacoes = async (transacoes: Transacao[]): Promise<void> =
     }
 
     if (transacoesParaSalvar.length > 0) {
-      const { data, error } = await supabase!
+      const { error } = await supabase!
         .from(TABLE_TRANSACOES)
         .insert(transacoesParaSalvar)
         .select();
