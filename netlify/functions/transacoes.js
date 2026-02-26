@@ -1,5 +1,13 @@
-const { google } = require('googleapis');
-const { v4: uuidv4 } = require('uuid');
+// Netlify Functions usa CommonJS, mesmo que o projeto seja ESM
+let google, uuidv4;
+
+try {
+  google = require('googleapis');
+  uuidv4 = require('uuid').v4;
+} catch (error) {
+  console.error('Erro ao carregar dependências:', error);
+  // Fallback caso as dependências não estejam disponíveis
+}
 
 // Handler para GET /api/transacoes
 exports.handler = async (event, context) => {
@@ -8,6 +16,7 @@ exports.handler = async (event, context) => {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Content-Type': 'application/json',
   };
 
   // Handle preflight
@@ -19,7 +28,28 @@ exports.handler = async (event, context) => {
     };
   }
 
+  // Definir variáveis no escopo externo para que estejam disponíveis no catch
+  const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID;
+  const SHEET_TAB = process.env.GOOGLE_SHEET_TAB || 'Transacoes';
+
   try {
+    // Validar variáveis de ambiente primeiro
+    if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY || !SPREADSHEET_ID) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Variáveis de ambiente não configuradas',
+          details: 'Verifique: GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY, GOOGLE_SHEET_ID',
+          missing: [
+            !process.env.GOOGLE_CLIENT_EMAIL && 'GOOGLE_CLIENT_EMAIL',
+            !process.env.GOOGLE_PRIVATE_KEY && 'GOOGLE_PRIVATE_KEY',
+            !SPREADSHEET_ID && 'GOOGLE_SHEET_ID',
+          ].filter(Boolean)
+        }),
+      };
+    }
+    
     // Configuração do Google Sheets
     const auth = new google.auth.GoogleAuth({
       credentials: {
@@ -30,16 +60,6 @@ exports.handler = async (event, context) => {
     });
 
     const sheets = google.sheets({ version: 'v4', auth });
-    const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID;
-    const SHEET_TAB = process.env.GOOGLE_SHEET_TAB || 'Transacoes';
-
-    if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY || !SPREADSHEET_ID) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: 'Variáveis de ambiente não configuradas' }),
-      };
-    }
 
     // GET - Carregar transações
     if (event.httpMethod === 'GET') {
@@ -184,7 +204,20 @@ exports.handler = async (event, context) => {
 
     // POST - Criar transação
     if (event.httpMethod === 'POST') {
-      const payload = JSON.parse(event.body);
+      let payload;
+      try {
+        payload = JSON.parse(event.body || '{}');
+      } catch (parseError) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: 'JSON inválido',
+            details: 'O corpo da requisição não é um JSON válido',
+            body: event.body
+          }),
+        };
+      }
 
       // Validação básica
       if (!payload.descricao || !payload.data || payload.valor === undefined) {
@@ -197,7 +230,7 @@ exports.handler = async (event, context) => {
 
       // Gerar ID e createdAt se não fornecidos
       const novaTransacao = {
-        id: payload.id || uuidv4(),
+        id: payload.id || (uuidv4 ? uuidv4() : Date.now().toString()),
         descricao: payload.descricao,
         valor: payload.valor,
         pessoa: payload.pessoa || 'matheus',
@@ -268,45 +301,63 @@ exports.handler = async (event, context) => {
   } catch (error) {
     console.error('Erro na função:', error);
     console.error('Stack:', error.stack);
+    console.error('Event:', JSON.stringify(event, null, 2));
     
     // Retornar mensagem de erro mais detalhada
     let errorMessage = 'Erro interno do servidor';
     let errorDetails = error.message || 'Erro desconhecido';
+    let statusCode = 500;
     
     // Verificar se é erro de autenticação
-    if (error.message?.includes('credentials') || error.message?.includes('authentication')) {
+    if (error.message?.includes('credentials') || error.message?.includes('authentication') || error.message?.includes('invalid_grant')) {
       errorMessage = 'Erro de autenticação com Google Sheets';
-      errorDetails = 'Verifique as credenciais da service account';
+      errorDetails = 'Verifique as credenciais da service account (GOOGLE_CLIENT_EMAIL e GOOGLE_PRIVATE_KEY)';
+      statusCode = 401;
     }
     
     // Verificar se é erro de permissão
     if (error.message?.includes('permission') || error.message?.includes('PERMISSION_DENIED')) {
       errorMessage = 'Erro de permissão';
-      errorDetails = 'A service account não tem permissão para acessar a planilha';
+      errorDetails = `A service account não tem permissão para acessar a planilha. Compartilhe a planilha com: ${process.env.GOOGLE_CLIENT_EMAIL}`;
+      statusCode = 403;
     }
     
     // Verificar se é erro de planilha não encontrada
-    if (error.message?.includes('not found') || error.message?.includes('NOT_FOUND')) {
-      errorMessage = 'Planilha não encontrada';
-      errorDetails = 'Verifique se o GOOGLE_SHEET_ID está correto';
+    if (error.message?.includes('not found') || error.message?.includes('NOT_FOUND') || error.message?.includes('Unable to parse range')) {
+      errorMessage = 'Planilha ou aba não encontrada';
+      errorDetails = `Verifique se o GOOGLE_SHEET_ID está correto e se a aba "${process.env.GOOGLE_SHEET_TAB || 'Transacoes'}" existe`;
+      statusCode = 404;
     }
     
     // Verificar se é erro de operação não suportada (geralmente aba não existe)
     if (error.message?.includes('not supported') || error.message?.includes('This operation is not supported')) {
       errorMessage = 'Operação não suportada';
-      errorDetails = `A aba "${SHEET_TAB}" pode não existir ou a planilha não está acessível. Verifique se a aba existe e se a planilha está compartilhada com: ${process.env.GOOGLE_CLIENT_EMAIL}`;
+      errorDetails = `A aba "${process.env.GOOGLE_SHEET_TAB || 'Transacoes'}" pode não existir. Verifique o nome da aba na planilha e configure GOOGLE_SHEET_TAB corretamente`;
+      statusCode = 400;
     }
     
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ 
-        error: errorMessage, 
-        details: errorDetails,
-        message: error.message,
-        // Em desenvolvimento, incluir stack trace
-        ...(process.env.NETLIFY_DEV && { stack: error.stack })
-      }),
-    };
+    // Garantir que sempre retornamos uma resposta válida
+    try {
+      return {
+        statusCode,
+        headers,
+        body: JSON.stringify({ 
+          error: errorMessage, 
+          details: errorDetails,
+          message: error.message,
+          sheetId: process.env.GOOGLE_SHEET_ID,
+          sheetTab: process.env.GOOGLE_SHEET_TAB || 'Transacoes',
+        }),
+      };
+    } catch (jsonError) {
+      // Se até o JSON.stringify falhar, retornar resposta simples
+      return {
+        statusCode: 500,
+        headers: {
+          'Content-Type': 'text/plain',
+        },
+        body: `Erro crítico: ${errorMessage} - ${errorDetails}`,
+      };
+    }
   }
 };
